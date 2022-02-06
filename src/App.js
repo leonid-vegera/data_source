@@ -34,12 +34,13 @@ function App() {
   const [showFilterRow, setFilterRow] = useState(true);
   const [showHeaderFilter, setHeaderFilter] = useState(true);
   const [currentFilter, setcurrentFilter] = useState(applyFilterTypes[0].key);
-  const [isAddButtonVisible, setAddButtonVisible] = useState(true);
-  const [isEditButtonVisible, setEditButtonVisible] = useState(true);   //изменить
-  const [isDeleteButtonVisible, setDeleteButtonVisible] = useState(true);   //изменить
+  const [isAddButtonDisabled, setAddButtonDisabled] = useState(false);
+  const [isEditButtonDisabled, setEditButtonDisabled] = useState(true);   //изменить
+  const [isDeleteButtonDisabled, setDeleteButtonDisabled] = useState(true);   //изменить
   const [selectedState, setSelectedState] = useState('');
   const [selectedEmployees, setSelectedEmployees] = useState(allEmployees);
   const [selectedPerson, setSelectedPerson] = useState('');
+  const [rowData, setRowData] = useState([]);
 
   useEffect(
     () => {
@@ -48,13 +49,31 @@ function App() {
     }, [selectedState]
   )
 
+  useEffect(
+    () => {
+      if (rowData.length === 1) {
+        setAddButtonDisabled(false);
+        setEditButtonDisabled(false);
+        setDeleteButtonDisabled(false);
+      } else if (rowData.length > 1) {
+        setAddButtonDisabled(true);
+        setEditButtonDisabled(true);
+        setDeleteButtonDisabled(false);
+      } else {
+        setAddButtonDisabled(false);
+        setEditButtonDisabled(true);
+        setDeleteButtonDisabled(true);
+      }
+    }, [rowData]
+  )
+
   const dataGridRef = useRef();   // todo
 
   const data = new DataSource({
     store: employees,
   })
 
-  const addButtonOptions = {
+/*   const addButtonOptions = {
     icon: 'plus',
     text: 'Add',
     onClick: () => {
@@ -78,7 +97,7 @@ function App() {
   const updateButtonOptions = {
     icon: 'refresh',
     text: 'Update',
-  }
+  } */
 
   const statesList = states.map((state) => state['Name']);
   
@@ -95,6 +114,11 @@ function App() {
     selectedPersonsByState = allEmployees;
   }
 
+  const onSelectionChanged = ({ selectedRowsData }) => {
+    const data = selectedRowsData;
+    setRowData(data);
+  }
+
   return (
     <>
       <DataGrid
@@ -102,19 +126,70 @@ function App() {
         keyExpr="ID"
         showBorders={true}
         remoteOperations={true}
+        onSelectionChanged={onSelectionChanged}
         ref={dataGridRef}  // todo
       >
         <Toolbar>
-          <Item location="after" widget="dxButton" options={addButtonOptions} visible={isAddButtonVisible} />
-          <Item location="after" widget="dxButton" options={editButtonOptions} visible={isEditButtonVisible} />
-          <Item location="after" widget="dxButton" options={deleteButtonOptions} allowDeleting={true} visible={isDeleteButtonVisible} />
+          <Item location="after">
+            <Button
+              icon='plus'
+              text='Add'
+              type="success"
+              stylingMode="contained"
+              disabled={isAddButtonDisabled}
+              onClick={
+                () => {}
+              }
+            />
+          </Item>
+          <Item location="after">
+            <Button
+              icon='rename'
+              text='Edit'
+              type="success"
+              stylingMode="contained"
+              disabled={isEditButtonDisabled}
+              onClick={
+                () => { }
+              }/>
+          </Item>
+          <Item location="after">
+            <Button
+              icon='minus'
+              text='Delete'
+              type="success"
+              stylingMode="contained"
+              disabled={isDeleteButtonDisabled}
+              onClick={
+                () => { }
+              }
+            />
+          </Item >
+          <Item location="after">
+            <Button
+              icon='refresh'
+              text='Update'
+              type="default"
+              stylingMode="contained"
+              onClick={
+                () => {
+                  console.log('Updated');
+                  document.location.reload();
+                  // dataGridRef.current.instance.refresh();
+                }
+              }
+            />
+          </Item>
+{/*           <Item location="after" widget="dxButton" options={addButtonOptions} active={isAddButtonVisible} />
+          <Item location="after" widget="dxButton" options={editButtonOptions} active={isEditButtonVisible} />
+          <Item location="after" widget="dxButton" options={deleteButtonOptions} allowDeleting={true} active={isDeleteButtonVisible} />
           <Item location="after" widget="dxButton" options={updateButtonOptions} onClick={
             () => {
               console.log('Updated');
               document.location.reload();
               // dataGridRef.current.instance.refresh();
             }
-          }/>
+          }/> */}
         </Toolbar>
         <FilterRow
           visible={showFilterRow}
