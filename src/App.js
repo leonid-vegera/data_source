@@ -1,10 +1,13 @@
 import 'devextreme/dist/css/dx.common.css';
 import 'devextreme/dist/css/dx.light.css';
+import 'devextreme/dist/css/dx.common.css';
+import 'devextreme/dist/css/dx.light.css';
 import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 import 'devextreme/data/odata/store';
 import DataGrid, { Column, Paging, Pager, Editing, Popup, Scrolling, Selection, Sorting, FilterRow, HeaderFilter, SearchPanel, Lookup, Toolbar, Item } from 'devextreme-react/data-grid';
+import {  ButtonItem, ButtonOptions } from 'devextreme-react/form'
 import { Button } from 'devextreme-react/button';
 import SelectBox from 'devextreme-react/select-box';
 import DataSource from 'devextreme/data/data_source';
@@ -24,17 +27,26 @@ function App() {
   }, {
     key: 'onClick',
     name: 'On Button Click',
-  }];
+    }];
+  
+  const allEmployees = employees.map(employee => `${employee.FirstName} ${employee.LastName}`);
 
   const [showFilterRow, setFilterRow] = useState(true);
   const [showHeaderFilter, setHeaderFilter] = useState(true);
   const [currentFilter, setcurrentFilter] = useState(applyFilterTypes[0].key);
   const [isAddButtonVisible, setAddButtonVisible] = useState(true);
-  const [isUpdateButtonVisible, setUpdateButtonVisible] = useState(true);   //изменить
+  const [isEditButtonVisible, setEditButtonVisible] = useState(true);   //изменить
   const [isDeleteButtonVisible, setDeleteButtonVisible] = useState(true);   //изменить
   const [selectedState, setSelectedState] = useState('');
-  const [selectedEmployees, setSelectedEmployees] = useState([]);
-  // const [selectedStateId, setSelectedStateId] = useState('');
+  const [selectedEmployees, setSelectedEmployees] = useState(allEmployees);
+  const [selectedPerson, setSelectedPerson] = useState('');
+
+  useEffect(
+    () => {
+      setSelectedEmployees(selectedPersonsByState);
+      setSelectedPerson('')
+    }, [selectedState]
+  )
 
   const dataGridRef = useRef();   // todo
 
@@ -44,46 +56,44 @@ function App() {
 
   const addButtonOptions = {
     icon: 'plus',
+    text: 'Add',
     onClick: () => {
       console.log('Click!');
     }
   }
-  const updateButtonOptions = {
-    icon: 'refresh',
+  const editButtonOptions = {
+    icon: 'rename',
+    text: 'Edit',
     onClick: () => {
-      console.log('updated');
+      console.log('edited');
     }
   }
   const deleteButtonOptions = {
     icon: 'minus',
+    text: 'Delete',
     onClick: () => {
       console.log('Delete!');
     }
   }
+  const updateButtonOptions = {
+    icon: 'refresh',
+    text: 'Update',
+  }
 
   const statesList = states.map((state) => state['Name']);
-
-
-  console.log(`selectedState ---   ${selectedState}`);
-
-  useEffect(
-    () => {
-      const stateId = states.find((state) => state['Name'] === selectedState && state['ID']);   //* тут не правильно
-      console.log(`state id -- ${stateId}`);
-      const selEmploy = employees.filter(employee => employee['StateID'] === stateId?.['ID']);
-      console.log(`selected--${selEmploy}`);
-      setSelectedEmployees(selEmploy);
-    },
-    [selectedState]
-  )
   
-
-  // console.log(selectedStateObj);
-  // // const employeesList = employees.map((employee, i) => employees[i].LastName);
-  // const selectedStateId = selectedStateObj.ID;
-  // console.log(selectedStateId);
-  // const selectedEmployees = employees.filter((employee, i) => employee['StateID'] === selectedStateId);
-  // console.log(selectedEmployees);
+  const stateId = states.find(state => state.Name === selectedState)?.['ID'];
+  
+  let selectedPersonsByState = [];
+  if (stateId) {
+    selectedPersonsByState = employees
+    .filter(
+      employee => employee.StateID === stateId
+  )
+    .map(employee => `${employee.FirstName} ${employee.LastName}`)
+  } else {
+    selectedPersonsByState = allEmployees;
+  }
 
   return (
     <>
@@ -96,8 +106,15 @@ function App() {
       >
         <Toolbar>
           <Item location="after" widget="dxButton" options={addButtonOptions} visible={isAddButtonVisible} />
-          <Item location="after" widget="dxButton" options={updateButtonOptions} visible={isUpdateButtonVisible} />
-          <Item location="after" widget="dxButton" options={deleteButtonOptions} visible={isDeleteButtonVisible} />
+          <Item location="after" widget="dxButton" options={editButtonOptions} visible={isEditButtonVisible} />
+          <Item location="after" widget="dxButton" options={deleteButtonOptions} allowDeleting={true} visible={isDeleteButtonVisible} />
+          <Item location="after" widget="dxButton" options={updateButtonOptions} onClick={
+            () => {
+              console.log('Updated');
+              document.location.reload();
+              // dataGridRef.current.instance.refresh();
+            }
+          }/>
         </Toolbar>
         <FilterRow
           visible={showFilterRow}
@@ -132,9 +149,6 @@ function App() {
           allowAdding={true}
           allowUpdating={true}
         >
-          {/* <Popup
-              title="Info_list" showTitle={true} width={700} height={525}
-            /> */}
         </Editing>
         <Sorting mode="multiple" />
         <Scrolling mode="infinite" />
@@ -143,6 +157,20 @@ function App() {
           showPageSizeSelector={true}
           allowedPageSizes={allowedPageSizes}
         />
+        {/* <div className='reloadButton'>
+          <Button
+            icon="refresh"
+            width={170}
+            height={50}
+            text="Press to reload"
+            type="success"
+            stylingMode="contained"
+            onClick={() => {
+              console.log(dataGridRef.current.instance.refresh.done);
+              dataGridRef.current.instance.refresh();      // todo
+            }}
+          />
+        </div> */}
       </DataGrid>
       <div className='reloadButton'>
         <Button
@@ -153,8 +181,8 @@ function App() {
           type="success"
           stylingMode="contained"
           onClick={() => {
-            console.log(dataGridRef.current.instance);
-            dataGridRef.current.instance.refresh()      // todo
+            document.location.reload();
+            // dataGridRef.current.instance.refresh();      // todo
           }}
         />
       </div>
@@ -172,6 +200,10 @@ function App() {
         <SelectBox
           items={selectedEmployees}
           placeholder='Employees name'
+          value={selectedPerson}
+          onValueChanged={(event) => {
+            setSelectedPerson(event.value);
+          }}
         />
       </div>
     </>
